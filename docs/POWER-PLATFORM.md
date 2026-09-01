@@ -5,14 +5,14 @@ for the project being measured. Do not add the entire toolkit as a Git
 submodule. The project's source repository receives only its own `.aic` state,
 approved reports, and—when applicable—the generated Code App page.
 
-## Install from the private GitHub repository
+## Install from GitHub
 
-Authenticate GitHub CLI first so `pip` can access the private repository, then
-create a project-local tools environment:
+Create a project-local tools environment and install the toolkit. The
+repository is public, so no GitHub authentication is required; if your fork is
+private, run `gh auth setup-git` first.
 
 ```powershell
 cd C:\VSCodeProjects\my-power-platform-project
-gh auth setup-git
 py -m venv .aic-tools
 .\.aic-tools\Scripts\Activate.ps1
 python -m pip install "git+https://github.com/walkthenose75/ai-build-cost-toolkit.git"
