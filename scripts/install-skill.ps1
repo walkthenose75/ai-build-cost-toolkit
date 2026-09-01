@@ -4,7 +4,8 @@ param(
     [switch]$Force
 )
 
-$source = Join-Path $PSScriptRoot '..\skill\aic-tracker'
+# Single canonical skill source, shared with `python -m ai_build_cost install-skill`.
+$source = Join-Path $PSScriptRoot '..\ai_build_cost\skill\SKILL.md'
 $source = (Resolve-Path $source).Path
 
 if (Test-Path $Destination) {
@@ -14,5 +15,5 @@ if (Test-Path $Destination) {
 }
 
 New-Item -ItemType Directory -Path $Destination -Force | Out-Null
-Copy-Item -Path (Join-Path $source '*') -Destination $Destination -Recurse -Force
+Copy-Item -Path $source -Destination (Join-Path $Destination 'SKILL.md') -Force
 Write-Output "Installed or updated aic-tracker skill at $Destination"

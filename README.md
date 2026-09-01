@@ -149,9 +149,10 @@ and are listed under `rateCard.fallbackRatedModels`.
 python -m ai_build_cost install-skill
 ```
 
-The command works across operating systems and copies the packaged skill to
-your personal Copilot skills directory. `scripts\install-skill.ps1` is included
-as a Windows convenience wrapper for source checkouts.
+The command works across operating systems and copies the single packaged
+skill (`ai_build_cost/skill/SKILL.md`) to your personal Copilot skills
+directory. `scripts\install-skill.ps1` is a Windows convenience wrapper for
+source checkouts that installs that same file.
 
 ## Add it to a Power Platform project
 

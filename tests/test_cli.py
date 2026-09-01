@@ -188,17 +188,25 @@ class CliTests(unittest.TestCase):
             )
             self.assertGreater(data_source.count('"schemaVersion": 1'), 1)
 
-    def test_bundled_and_root_skill_files_match(self):
+    def test_exactly_one_canonical_skill_source(self):
         repo_root = Path(__file__).parents[1]
-        packaged = repo_root / "ai_build_cost" / "skill" / "SKILL.md"
-        root_copy = repo_root / "skill" / "aic-tracker" / "SKILL.md"
+        canonical = repo_root / "ai_build_cost" / "skill" / "SKILL.md"
+        self.assertTrue(
+            canonical.is_file(),
+            "The canonical skill ai_build_cost/skill/SKILL.md is missing.",
+        )
+        tracked = subprocess.run(
+            ["git", "ls-files", "*SKILL.md"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+        )
+        skill_files = [line for line in tracked.stdout.splitlines() if line.strip()]
         self.assertEqual(
-            packaged.read_text(encoding="utf-8"),
-            root_copy.read_text(encoding="utf-8"),
-            "The Python-packaged skill and the PowerShell-installed skill have "
-            "diverged. Keep ai_build_cost/skill/SKILL.md and "
-            "skill/aic-tracker/SKILL.md byte-identical so both installers ship "
-            "the same skill.",
+            ["ai_build_cost/skill/SKILL.md"],
+            skill_files,
+            "There must be exactly one skill source so the Python and PowerShell "
+            f"installers can never ship divergent copies. Found: {skill_files}",
         )
 
     def test_code_app_template_has_no_project_specific_assumptions(self):
