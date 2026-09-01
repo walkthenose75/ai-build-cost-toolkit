@@ -31,6 +31,24 @@ The toolkit deliberately separates four kinds of evidence:
 - An installable GitHub Copilot CLI skill for repeatable agent-driven refreshes.
 - Unit tests, CI, sample data, methodology, privacy guidance, and migration notes.
 
+## Before you start
+
+This tool reads **local** GitHub Copilot **CLI** telemetry
+(`~/.copilot/session-store.db`) on the machine where you work. Confirm all three
+before your first run:
+
+- **Python 3.9+** is installed.
+- You built or worked on the project you want to measure using the **Copilot
+  CLI** (the terminal agent). VS Code Copilot **Chat** is not recorded and
+  cannot be measured.
+- You are measuring a project **on this machine** — telemetry is local and is
+  never uploaded.
+
+Run `python -m ai_build_cost doctor` first to confirm the store exists and is
+supported. Token, credit, and active-time values are measured directly; the
+**dollar** value uses an *example* rate card, so verify and date `pricing.json`
+before quoting any dollar figure.
+
 ## Install
 
 Requires Python 3.9+ and usage recorded by **GitHub Copilot CLI**.
