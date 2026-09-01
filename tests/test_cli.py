@@ -50,12 +50,48 @@ def report(repository="owner/repo", version="test"):
 
 
 class CliTests(unittest.TestCase):
-    def run_cli(self, *arguments):
+    def run_cli(self, *arguments, cwd=None):
         return subprocess.run(
             [sys.executable, "-m", "ai_build_cost", *arguments],
             capture_output=True,
             text=True,
+            cwd=cwd,
         )
+
+    def test_init_scaffolds_project_rate_card(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = self.run_cli("init", cwd=str(root))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            pricing = root / ".aic" / "pricing.json"
+            self.assertTrue(pricing.is_file())
+            self.assertIn("models", json.loads(pricing.read_text(encoding="utf-8")))
+            self.assertTrue((root / ".aic" / ".gitignore").is_file())
+
+            second = self.run_cli("init", cwd=str(root))
+            self.assertEqual(second.returncode, 2)
+            self.assertIn("--force", second.stderr)
+
+            forced = self.run_cli("init", "--force", cwd=str(root))
+            self.assertEqual(forced.returncode, 0, forced.stderr)
+
+    def test_dashboard_uses_project_default_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            aic = root / ".aic"
+            aic.mkdir()
+            (aic / "aic-report.json").write_text(
+                json.dumps(report()), encoding="utf-8"
+            )
+            result = self.run_cli("dashboard", cwd=str(root))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((root / "reports" / "ai-build-cost.html").is_file())
+
+    def test_dashboard_reports_missing_default_report_clearly(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = self.run_cli("dashboard", cwd=str(directory))
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("aic checkpoint", result.stderr)
 
     def test_validate_rejects_inconsistent_totals(self):
         with tempfile.TemporaryDirectory() as directory:

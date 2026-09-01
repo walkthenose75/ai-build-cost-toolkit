@@ -59,6 +59,13 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser = sub.add_parser("doctor", help="Verify the local Copilot telemetry store")
     doctor_parser.add_argument("--store", type=_path, default=default_store_path())
 
+    init = sub.add_parser(
+        "init",
+        help="Set up AI Build Cost in the current project (creates .aic/pricing.json)",
+    )
+    init.add_argument("--dir", type=_path, default=_path(".aic"))
+    init.add_argument("--force", action="store_true")
+
     collect = sub.add_parser("collect", help="Collect cumulative project telemetry")
     collect.add_argument("--repo", type=_path, default=Path.cwd())
     collect.add_argument("--store", type=_path, default=default_store_path())
@@ -91,7 +98,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="cwd",
         help="How project sessions are matched (default: cwd)",
     )
-    checkpoint.add_argument("--pricing", type=_path, default=default_pricing_path())
+    checkpoint.add_argument("--pricing", type=_path, default=None)
     checkpoint.add_argument("--dir", type=_path, default=_path(".aic"))
     checkpoint.add_argument("--label", default="checkpoint")
     checkpoint.add_argument("--reset", action="store_true")
@@ -102,11 +109,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     dashboard = sub.add_parser("dashboard", help="Generate a self-contained HTML report")
-    dashboard.add_argument("--report", type=_path, required=True)
+    dashboard.add_argument(
+        "--report", type=_path, default=_path(".aic/aic-report.json")
+    )
     dashboard.add_argument("--baseline", type=_path)
     dashboard.add_argument("--ledger", type=_path)
     dashboard.add_argument("--title", default="AI Build Cost")
-    dashboard.add_argument("-o", "--output", type=_path, required=True)
+    dashboard.add_argument(
+        "-o", "--output", type=_path, default=_path("reports/ai-build-cost.html")
+    )
 
     validate = sub.add_parser("validate", help="Validate a priced report")
     validate.add_argument("--report", type=_path, required=True)
@@ -275,6 +286,31 @@ def run(args: argparse.Namespace) -> int:
         print(json.dumps(result, indent=2))
         return 0 if result["supported"] else 1
 
+    if args.command == "init":
+        args.dir.mkdir(parents=True, exist_ok=True)
+        pricing_path = args.dir / "pricing.json"
+        if pricing_path.exists() and not args.force:
+            raise ValueError(
+                f"{pricing_path} already exists; re-run with --force to overwrite it"
+            )
+        shutil.copy2(default_pricing_path(), pricing_path)
+        gitignore = args.dir / ".gitignore"
+        if not gitignore.exists():
+            gitignore.write_text(
+                "# AI Build Cost: ignore mutable local state.\n"
+                "# Keep pricing.json, aic-ledger.csv, and reviewed reports.\n"
+                "aic-state.json\n"
+                ".aic-pending.json\n"
+                ".aic.lock\n"
+                "*.snapshot.json\n",
+                encoding="utf-8",
+            )
+        print(f"Initialized AI Build Cost in {args.dir}")
+        print(f"1. Verify and date the example rate card: {pricing_path}")
+        print('2. Measure this project:   aic checkpoint --label "initial build"')
+        print("3. Publish the dashboard:  aic dashboard")
+        return 0
+
     if args.command == "collect":
         snapshot = collect_project(
             args.repo, args.store, args.since, args.session_id, args.match
@@ -294,7 +330,11 @@ def run(args: argparse.Namespace) -> int:
         snapshot = collect_project(
             args.repo, args.store, args.since, args.session_id, args.match
         )
-        report = price_snapshot(snapshot, _load_pricing(args.pricing))
+        project_pricing = args.dir / "pricing.json"
+        pricing_path = args.pricing or (
+            project_pricing if project_pricing.exists() else default_pricing_path()
+        )
+        report = price_snapshot(snapshot, _load_pricing(pricing_path))
         checkpoint = append_checkpoint(
             report,
             args.dir,
@@ -313,8 +353,18 @@ def run(args: argparse.Namespace) -> int:
             and (args.report.parent / ".aic-pending.json").exists()
         ):
             recover_checkpoint(args.report.parent)
+        if not args.report.exists():
+            raise ValueError(
+                f"No report found at {args.report}. Run 'aic checkpoint' first in "
+                "this project, or pass --report <path>."
+            )
         report = read_json(args.report)
         baseline = read_json(args.baseline) if args.baseline else None
+        ledger = args.ledger
+        if ledger is None:
+            candidate = args.report.parent / "aic-ledger.csv"
+            if candidate.exists():
+                ledger = candidate
         report_errors = _validate_report(report)
         if report_errors:
             raise ValueError("Current report is invalid: " + "; ".join(report_errors))
@@ -330,7 +380,7 @@ def run(args: argparse.Namespace) -> int:
                     "Baseline is not compatible with the current report: "
                     + "; ".join(compatibility_errors)
                 )
-        render_dashboard(report, args.output, baseline, args.ledger, args.title)
+        render_dashboard(report, args.output, baseline, ledger, args.title)
         print(f"Dashboard written to {args.output}")
         return 0
 

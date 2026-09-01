@@ -53,6 +53,21 @@ before quoting any dollar figure.
 
 Requires Python 3.9+ and usage recorded by **GitHub Copilot CLI**.
 
+**Add it to the project you want to measure** (recommended). From that
+project's folder, in its virtual environment:
+
+```powershell
+python -m pip install "git+https://github.com/walkthenose75/ai-build-cost-toolkit.git"
+aic doctor
+```
+
+That installs the `aic` command with no other dependencies. There is nothing to
+clone and no separate tool to keep activated — you run `aic` from inside your
+project.
+
+<details>
+<summary>Alternative: clone the source (for contributors)</summary>
+
 ```powershell
 git clone https://github.com/walkthenose75/ai-build-cost-toolkit.git
 cd ai-build-cost-toolkit
@@ -62,29 +77,35 @@ python -m pip install -e .
 python -m ai_build_cost doctor
 ```
 
+</details>
+
 VS Code Copilot Chat uses a different store and does not expose the
 `assistant_usage_events` telemetry table used here. Those sessions cannot be
 reconstructed by this tool.
 
 ## Five-minute workflow
 
-From the project you want to measure:
+From the project you want to measure, run three commands — no paths required:
 
 ```powershell
-python -m ai_build_cost checkpoint `
-  --repo . `
-  --dir .aic `
-  --label "release candidate"
-
-python -m ai_build_cost dashboard `
-  --report .aic\aic-report.json `
-  --ledger .aic\aic-ledger.csv `
-  --title "My Project — AI Build Cost" `
-  --output reports\ai-build-cost.html
+aic init                              # once: creates .aic/pricing.json to verify
+aic checkpoint --label "release candidate"
+aic dashboard
 ```
+
+`aic init` drops an editable copy of the example rate card at `.aic\pricing.json`
+(verify and date it before quoting dollars). `aic checkpoint` measures this
+project, automatically using `.aic\pricing.json` when present, and writes
+`.aic\aic-report.json` plus an append-only ledger. `aic dashboard` needs no
+arguments — it reads `.aic\aic-report.json` and the ledger and writes
+`reports\ai-build-cost.html`.
 
 Open `reports\ai-build-cost.html` in any browser. It has no server or runtime
 dependency and can be shared after you review the embedded project metadata.
+
+Every flag still works if you want to be explicit (`--repo`, `--dir`,
+`--pricing`, `--report`, `--output`, `--title`); the defaults simply make the
+common case a one-liner.
 
 ### Baseline and maintenance views
 
@@ -116,6 +137,7 @@ are timestamp-archived before a new baseline starts.
 | Command | Purpose |
 |---|---|
 | `aic doctor` | Verify the local Copilot store and required tables. |
+| `aic init` | Set up AI Build Cost in the current project (`.aic/pricing.json`). |
 | `aic collect` | Export a project- or session-scoped raw telemetry snapshot. |
 | `aic calculate` | Apply cache-aware pricing to an existing snapshot. |
 | `aic checkpoint` | Collect, calculate, append the ledger, and save the latest report. |
