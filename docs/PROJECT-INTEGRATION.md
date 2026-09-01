@@ -76,3 +76,8 @@ own design system.
 For lifecycle views, persist an immutable initial report and derive maintenance
 as `current - initial`. Never sum checkpoint snapshots; every snapshot is
 cumulative.
+
+For Power Apps Code Apps, prefer the packaged `install-code-app-page` command
+over copying the standalone dashboard implementation. It generates a typed
+`aic-data.ts` module and installs a React component that consumes the same
+validated report contract. See [Power Platform integration](POWER-PLATFORM.md).

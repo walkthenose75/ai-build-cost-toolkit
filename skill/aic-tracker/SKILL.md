@@ -35,14 +35,19 @@ python -m ai_build_cost validate --report <repo>/.aic/aic-report.json
 python -m ai_build_cost dashboard --report <repo>/.aic/aic-report.json --ledger <repo>/.aic/aic-ledger.csv --title "<project> - AI Build Cost" --output <repo>/reports/ai-build-cost.html
 ```
 
-If the project has an immutable initial-build report, add:
+For a Power Apps Code App:
 
 ```text
---baseline <repo>/reports/initial-build.json
+python -m ai_build_cost install-code-app-page --report <repo>/.aic/aic-report.json --target <repo>/src/features/ai-build-cost --force
 ```
 
-The dashboard derives Since Baseline as current minus initial. Never sum
-cumulative checkpoints.
+Add `--baseline <repo>/reports/initial-build.json` when available, then wire
+the generated page into the app's existing routing and navigation. The toolkit
+is a developer tool, not a Git submodule, and browser code must never access
+the local Copilot telemetry store.
+
+The dashboard and Code App page derive Since Baseline as current minus initial.
+Never sum cumulative checkpoints.
 
 ## Report to the user
 

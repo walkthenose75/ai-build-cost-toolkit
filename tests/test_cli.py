@@ -123,6 +123,85 @@ class CliTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue((destination / "SKILL.md").exists())
 
+    def test_installs_power_apps_code_app_page_and_typed_data(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            report_path = root / "report.json"
+            target = root / "src" / "features" / "ai-build-cost"
+            report_path.write_text(json.dumps(report()), encoding="utf-8")
+
+            result = self.run_cli(
+                "install-code-app-page",
+                "--report",
+                str(report_path),
+                "--target",
+                str(target),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                {path.name for path in target.iterdir()},
+                {
+                    "AiBuildCostPage.tsx",
+                    "AiBuildCostPage.css",
+                    "aic-data.ts",
+                    "index.ts",
+                    "README.md",
+                },
+            )
+            data_source = (target / "aic-data.ts").read_text(encoding="utf-8")
+            self.assertIn("AIC_CURRENT_REPORT: AicReport", data_source)
+            self.assertIn("AIC_BASELINE_REPORT: AicReport | undefined = undefined", data_source)
+
+            duplicate = self.run_cli(
+                "install-code-app-page",
+                "--report",
+                str(report_path),
+                "--target",
+                str(target),
+            )
+            self.assertEqual(duplicate.returncode, 2)
+            self.assertIn("--force", duplicate.stderr)
+
+    def test_installs_compatible_baseline_into_code_app_data(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            current_path = root / "current.json"
+            baseline_path = root / "baseline.json"
+            target = root / "feature"
+            current_path.write_text(json.dumps(report()), encoding="utf-8")
+            baseline_path.write_text(json.dumps(report()), encoding="utf-8")
+
+            result = self.run_cli(
+                "install-code-app-page",
+                "--report",
+                str(current_path),
+                "--baseline",
+                str(baseline_path),
+                "--target",
+                str(target),
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data_source = (target / "aic-data.ts").read_text(encoding="utf-8")
+            self.assertNotIn(
+                "AIC_BASELINE_REPORT: AicReport | undefined = undefined",
+                data_source,
+            )
+            self.assertGreater(data_source.count('"schemaVersion": 1'), 1)
+
+    def test_code_app_template_has_no_project_specific_assumptions(self):
+        template = (
+            Path(__file__).parents[1]
+            / "ai_build_cost"
+            / "templates"
+            / "power_apps_code_app"
+            / "AiBuildCostPage.tsx"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("HLS", template)
+        self.assertNotIn("$175", template)
+        self.assertNotIn("localStorage", template)
+        self.assertIn('aria-label="Reporting period"', template)
+        self.assertIn("not an invoice", template)
+
 
 if __name__ == "__main__":
     unittest.main()

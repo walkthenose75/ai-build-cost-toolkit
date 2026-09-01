@@ -33,4 +33,8 @@ Issues = "https://github.com/walkthenose75/ai-build-cost-toolkit/issues"
 include = ["ai_build_cost*"]
 
 [tool.setuptools.package-data]
-ai_build_cost = ["pricing.json", "skill/SKILL.md"]
+ai_build_cost = [
+  "pricing.json",
+  "skill/SKILL.md",
+  "templates/power_apps_code_app/*",
+]

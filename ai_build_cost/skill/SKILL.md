@@ -34,8 +34,19 @@ python -m ai_build_cost validate --report <repo>/.aic/aic-report.json
 python -m ai_build_cost dashboard --report <repo>/.aic/aic-report.json --ledger <repo>/.aic/aic-ledger.csv --title "<project> - AI Build Cost" --output <repo>/reports/ai-build-cost.html
 ```
 
+For a Power Apps Code App, install or refresh the in-app page:
+
+```text
+python -m ai_build_cost install-code-app-page --report <repo>/.aic/aic-report.json --target <repo>/src/features/ai-build-cost --force
+```
+
 Add `--baseline <repo>/reports/initial-build.json` when an immutable initial
-report exists. The dashboard derives the increment as current minus baseline;
+report exists. Wire the generated page into the consuming app's existing page
+union, page switch, and navigation conventions. Do not add the toolkit
+repository as a submodule and do not query the local telemetry database from
+browser code.
+
+The dashboard and Code App page derive the increment as current minus baseline;
 never sum cumulative checkpoints.
 
 ## User report

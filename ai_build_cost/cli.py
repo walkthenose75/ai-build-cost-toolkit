@@ -5,7 +5,7 @@ import json
 import shutil
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from .collector import collect_project, default_store_path, doctor
 from .core import (
@@ -29,6 +29,23 @@ def _load_pricing(path: Path) -> dict[str, Any]:
     if "models" not in value or "default" not in value["models"]:
         raise ValueError("Pricing file must contain models.default")
     return value
+
+
+def _typescript_data_module(
+    report: dict[str, Any], baseline: Optional[dict[str, Any]]
+) -> str:
+    current_json = json.dumps(report, indent=2, ensure_ascii=True)
+    baseline_value = (
+        json.dumps(baseline, indent=2, ensure_ascii=True)
+        if baseline is not None
+        else "undefined"
+    )
+    return (
+        "import type { AicReport } from './AiBuildCostPage'\n\n"
+        f"export const AIC_CURRENT_REPORT: AicReport = {current_json}\n\n"
+        "export const AIC_BASELINE_REPORT: AicReport | undefined = "
+        f"{baseline_value}\n"
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -103,6 +120,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=_path(Path.home() / ".copilot" / "skills" / "aic-tracker"),
     )
     install_skill.add_argument("--force", action="store_true")
+
+    install_code_app = sub.add_parser(
+        "install-code-app-page",
+        help="Install a typed AI Build Cost page into a Power Apps Code App",
+    )
+    install_code_app.add_argument("--report", type=_path, required=True)
+    install_code_app.add_argument("--baseline", type=_path)
+    install_code_app.add_argument("--target", type=_path, required=True)
+    install_code_app.add_argument("--force", action="store_true")
     return parser
 
 
@@ -331,6 +357,50 @@ def run(args: argparse.Namespace) -> int:
         args.destination.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, args.destination / "SKILL.md")
         print(f"Installed aic-tracker skill to {args.destination}")
+        return 0
+
+    if args.command == "install-code-app-page":
+        report = read_json(args.report)
+        baseline = read_json(args.baseline) if args.baseline else None
+        report_errors = _validate_report(report)
+        if report_errors:
+            raise ValueError("Current report is invalid: " + "; ".join(report_errors))
+        if baseline:
+            baseline_errors = _validate_report(baseline)
+            if baseline_errors:
+                raise ValueError(
+                    "Baseline report is invalid: " + "; ".join(baseline_errors)
+                )
+            compatibility_errors = _baseline_compatibility_errors(baseline, report)
+            if compatibility_errors:
+                raise ValueError(
+                    "Baseline is not compatible with the current report: "
+                    + "; ".join(compatibility_errors)
+                )
+
+        source = Path(__file__).with_name("templates") / "power_apps_code_app"
+        managed_names = {
+            "AiBuildCostPage.tsx",
+            "AiBuildCostPage.css",
+            "index.ts",
+            "README.md",
+            "aic-data.ts",
+        }
+        existing = [name for name in managed_names if (args.target / name).exists()]
+        if existing and not args.force:
+            raise ValueError(
+                f"Code App integration already exists at {args.target}; "
+                "use --force to update it"
+            )
+
+        args.target.mkdir(parents=True, exist_ok=True)
+        for name in managed_names - {"aic-data.ts"}:
+            shutil.copy2(source / name, args.target / name)
+        (args.target / "aic-data.ts").write_text(
+            _typescript_data_module(report, baseline),
+            encoding="utf-8",
+        )
+        print(f"Installed Power Apps Code App page to {args.target}")
         return 0
     raise ValueError(f"Unsupported command: {args.command}")
 

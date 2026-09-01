@@ -27,6 +27,7 @@ The toolkit deliberately separates four kinds of evidence:
 - Explicit fallback-rate disclosure for unknown models.
 - Explicit review flags for coarse prefix matches; exact aliases are configurable.
 - A responsive, accessible, dark-mode-aware single-file HTML dashboard.
+- A drop-in React/TypeScript report page for Power Apps Code Apps.
 - An installable GitHub Copilot CLI skill for repeatable agent-driven refreshes.
 - Unit tests, CI, sample data, methodology, privacy guidance, and migration notes.
 
@@ -102,6 +103,7 @@ are timestamp-archived before a new baseline starts.
 | `aic checkpoint` | Collect, calculate, append the ledger, and save the latest report. |
 | `aic dashboard` | Generate a self-contained HTML dashboard. |
 | `aic validate` | Validate the required report shape and non-negative counters. |
+| `aic install-code-app-page` | Install a typed report page and generated data into a Power Apps Code App. |
 
 Use `python -m ai_build_cost <command> --help` for all options. The shorter
 `aic` command is also installed and works automatically inside an activated
@@ -132,6 +134,21 @@ python -m ai_build_cost install-skill
 The command works across operating systems and copies the packaged skill to
 your personal Copilot skills directory. `scripts\install-skill.ps1` is included
 as a Windows convenience wrapper for source checkouts.
+
+## Add it to a Power Platform project
+
+The toolkit is installed as a developer tool; it is not added as a Git
+submodule. From the project being measured:
+
+```powershell
+python -m ai_build_cost checkpoint --repo . --dir .aic --label "initial checkpoint"
+python -m ai_build_cost install-code-app-page `
+  --report .aic\aic-report.json `
+  --target src\features\ai-build-cost
+```
+
+See [Power Platform integration](docs/POWER-PLATFORM.md) for new-project,
+existing-project, baseline, Code App wiring, and Copilot Chat instructions.
 
 ## Security and privacy
 

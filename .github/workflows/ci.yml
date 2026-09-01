@@ -25,3 +25,4 @@ jobs:
       - run: aic calculate --input examples/sample-snapshot.json --output build/sample-report.json
       - run: aic validate --report build/sample-report.json
       - run: aic dashboard --report build/sample-report.json --output build/sample-report.html
+      - run: aic install-code-app-page --report build/sample-report.json --target build/code-app-page
