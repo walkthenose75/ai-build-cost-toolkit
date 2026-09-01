@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-31T20:00:00Z",
+  "scope": {
+    "repository": "example/contoso-app",
+    "sessionCount": 4,
+    "requestCount": 27,
+    "firstActivity": "2026-08-25T16:00:00Z",
+    "lastActivity": "2026-08-31T20:00:00Z",
+    "calendarDays": 7
+  },
+  "totals": {
+    "premium_credits": 31.5
+  },
+  "models": [
+    {
+      "model": "claude-sonnet-5",
+      "input_tokens": 12500000,
+      "output_tokens": 165000,
+      "cache_read_tokens": 10900000,
+      "cache_write_tokens": 1200000,
+      "reasoning_tokens": 0,
+      "active_ms": 842000,
+      "requests": 21
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "input_tokens": 2100000,
+      "output_tokens": 48000,
+      "cache_read_tokens": 1800000,
+      "cache_write_tokens": 0,
+      "reasoning_tokens": 12000,
+      "active_ms": 201000,
+      "requests": 6
+    }
+  ]
+}
