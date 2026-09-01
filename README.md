@@ -132,6 +132,33 @@ Changing the collection filter, repository identity, session scope, or rate
 card requires `--allow-scope-change` or `--reset`. The prior state and ledger
 are timestamp-archived before a new baseline starts.
 
+## Tracking cost by feature
+
+> **The tool measures only work done in the GitHub Copilot _CLI_** (the terminal
+> agent). Anything built in VS Code Copilot _Chat_ is not recorded and cannot be
+> measured. Do the building in the CLI, then read the cost with `aic` in the same
+> terminal.
+
+There is no live agent and no per-file instrumentation. You attribute cost to
+parts of the project by **checkpointing at boundaries** — the cost of a phase is
+the difference between two checkpoints, which `aic checkpoint` prints for you as
+`Since last checkpoint`.
+
+```powershell
+# Build the first feature with Copilot CLI, then:
+aic checkpoint --label "auth module"
+
+# Build the next feature with Copilot CLI, then:
+aic checkpoint --label "reporting UI"
+```
+
+Each checkpoint reports the incremental cost since the previous one, so the two
+labels above give you the cost of each feature. The full labeled history is kept
+in `.aic\aic-ledger.csv`, and every report also breaks the total down **per
+model**. Telemetry is scoped per repository/session, so this milestone-delta
+approach — not per-file accounting — is how cost is attributed to "parts" of a
+project.
+
 ## Commands
 
 | Command | Purpose |
