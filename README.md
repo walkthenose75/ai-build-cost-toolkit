@@ -145,6 +145,10 @@ See [Methodology](docs/METHODOLOGY.md),
 [Project integration](docs/PROJECT-INTEGRATION.md), and
 [Review findings](docs/REVIEW-FINDINGS.md).
 
+The toolkit also dogfoods itself: see the measured
+[v1 build report](reports/toolkit-build-cost.html) and its
+[JSON source](reports/toolkit-build-cost.json).
+
 ## Development
 
 ```powershell
