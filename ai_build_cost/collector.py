@@ -15,6 +15,11 @@ def default_store_path() -> Path:
     return Path.home() / ".copilot" / "session-store.db"
 
 
+def _connect_readonly(store: Path) -> sqlite3.Connection:
+    """Open the Copilot store read-only so collection never mutates it."""
+    return sqlite3.connect(f"{store.as_uri()}?mode=ro", uri=True)
+
+
 def _normalized(path: Any) -> str:
     value = str(Path(path).resolve()).rstrip("\\/")
     return value.casefold() if os.name == "nt" else value
@@ -103,6 +108,7 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         "output_tokens",
         "cache_read_tokens",
         "cache_write_tokens",
+        "reasoning_tokens",
         "request_multiplier",
         "duration_ms",
         "created_at",
@@ -127,7 +133,7 @@ def collect_project(
     if not store.exists():
         raise FileNotFoundError(f"Copilot session store not found: {store}")
 
-    connection = sqlite3.connect(store)
+    connection = _connect_readonly(store)
     connection.row_factory = sqlite3.Row
     try:
         _validate_schema(connection)
@@ -158,7 +164,12 @@ def collect_project(
             if session_id or selected:
                 matched.append(row)
         if not matched:
-            raise ValueError(f"No Copilot CLI sessions matched {root}")
+            raise ValueError(
+                f"No Copilot CLI sessions matched {root} (match mode: {match_mode}). "
+                "Retry with --match both, confirm --repo points at the directory you "
+                "ran Copilot CLI from, and run 'aic doctor' to confirm telemetry exists. "
+                "VS Code Copilot Chat sessions are not recorded in this store."
+            )
 
         ids = [row["id"] for row in matched]
         placeholders = ",".join("?" for _ in ids)
@@ -184,7 +195,12 @@ def collect_project(
             params,
         ).fetchall()
         if not events:
-            raise ValueError("Matched sessions contain no usage telemetry")
+            raise ValueError(
+                f"{len(matched)} session(s) matched {root} but none contain usage "
+                "telemetry. The Copilot CLI store may have rotated, usage may predate "
+                "telemetry, or these were VS Code Copilot Chat sessions (not recorded "
+                "here). Try --match both or a different --repo, and run 'aic doctor'."
+            )
 
         by_model: dict[str, dict[str, Any]] = {}
         credit_by_turn: dict[tuple[str, str, int], float] = {}
@@ -288,7 +304,7 @@ def doctor(store_path: Optional[Path] = None) -> dict[str, Any]:
     }
     if not store.exists():
         return result
-    connection = sqlite3.connect(store)
+    connection = _connect_readonly(store)
     try:
         _validate_schema(connection)
         result["supported"] = True

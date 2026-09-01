@@ -89,6 +89,26 @@ class CollectorTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Invalid --since"):
             collect_project(self.root, self.store, since="not-a-date")
 
+    def test_rejects_store_missing_reasoning_tokens_column(self):
+        store = Path(self.temp.name) / "legacy-store.db"
+        connection = sqlite3.connect(store)
+        connection.executescript(
+            """
+            CREATE TABLE sessions (id TEXT PRIMARY KEY, cwd TEXT, repository TEXT);
+            CREATE TABLE assistant_usage_events (
+              id INTEGER PRIMARY KEY, session_id TEXT NOT NULL, agent_id TEXT,
+              turn_index INTEGER, model TEXT NOT NULL, input_tokens INTEGER,
+              output_tokens INTEGER, cache_read_tokens INTEGER,
+              cache_write_tokens INTEGER, request_multiplier REAL,
+              duration_ms INTEGER, created_at TEXT
+            );
+            """
+        )
+        connection.commit()
+        connection.close()
+        with self.assertRaisesRegex(ValueError, "reasoning_tokens"):
+            doctor(store)
+
     def test_doctor_reports_supported_store(self):
         result = doctor(self.store)
         self.assertTrue(result["supported"])
