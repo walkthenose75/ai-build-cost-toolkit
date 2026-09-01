@@ -188,6 +188,19 @@ class CliTests(unittest.TestCase):
             )
             self.assertGreater(data_source.count('"schemaVersion": 1'), 1)
 
+    def test_bundled_and_root_skill_files_match(self):
+        repo_root = Path(__file__).parents[1]
+        packaged = repo_root / "ai_build_cost" / "skill" / "SKILL.md"
+        root_copy = repo_root / "skill" / "aic-tracker" / "SKILL.md"
+        self.assertEqual(
+            packaged.read_text(encoding="utf-8"),
+            root_copy.read_text(encoding="utf-8"),
+            "The Python-packaged skill and the PowerShell-installed skill have "
+            "diverged. Keep ai_build_cost/skill/SKILL.md and "
+            "skill/aic-tracker/SKILL.md byte-identical so both installers ship "
+            "the same skill.",
+        )
+
     def test_code_app_template_has_no_project_specific_assumptions(self):
         template = (
             Path(__file__).parents[1]

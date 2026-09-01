@@ -12,53 +12,50 @@ If the module is unavailable, install the toolkit from
 ## Rules
 
 1. Run `python -m ai_build_cost doctor` before the first collection.
-2. Use the repository root as `--repo` and one stable, project-specific
-   `--dir` for all cumulative checkpoints.
-3. Verify and date the project's pricing file. Token cost is modeled and is
-   never described as an invoice.
-4. Use telemetry-recorded premium credits when available. Never fabricate
-   credits from a stale multiplier table.
-5. Disclose every default- and prefix-rated model.
+2. Use one stable project-specific ledger directory.
+3. Verify and date the project's pricing file. Cost is modeled, not an invoice.
+4. Use telemetry-recorded premium credits; never invent missing credits.
+5. Disclose default and prefix-rated models.
 6. Keep measured, modeled, estimated, and unavailable evidence separate.
 7. Never upload or commit `~/.copilot/session-store.db`.
 
-## Standard checkpoint
+## Workflow
+
+Run a checkpoint:
 
 ```text
 python -m ai_build_cost checkpoint --repo <repo> --dir <repo>/.aic --pricing <repo>/.aic/pricing.json --label "<milestone>"
 ```
 
-Then validate and publish:
+Validate and generate the report:
 
 ```text
 python -m ai_build_cost validate --report <repo>/.aic/aic-report.json
 python -m ai_build_cost dashboard --report <repo>/.aic/aic-report.json --ledger <repo>/.aic/aic-ledger.csv --title "<project> - AI Build Cost" --output <repo>/reports/ai-build-cost.html
 ```
 
-For a Power Apps Code App:
+For a Power Apps Code App, install or refresh the in-app page:
 
 ```text
 python -m ai_build_cost install-code-app-page --report <repo>/.aic/aic-report.json --target <repo>/src/features/ai-build-cost --force
 ```
 
-Add `--baseline <repo>/reports/initial-build.json` when available, then wire
-the generated page into the app's existing routing and navigation. The toolkit
-is a developer tool, not a Git submodule, and browser code must never access
-the local Copilot telemetry store.
+Add `--baseline <repo>/reports/initial-build.json` when an immutable initial
+report exists. Wire the generated page into the consuming app's existing page
+union, page switch, and navigation conventions. Do not add the toolkit
+repository as a submodule and do not query the local telemetry database from
+browser code.
 
-The dashboard and Code App page derive Since Baseline as current minus initial.
-Never sum cumulative checkpoints.
+The dashboard and Code App page derive the increment as current minus baseline;
+never sum cumulative checkpoints.
 
-## Report to the user
+## User report
 
-Lead with cumulative modeled compute, credits or their unavailable state, total
-input/output, cache-read share, active generation time, and the delta since the
-previous checkpoint. Name default- and prefix-rated models and repeat that compute cost
-is a rate-card valuation, not an invoice.
+Lead with modeled compute, credits or their unavailable state, input/output
+tokens, cache-read share, active generation, and delta since the previous
+checkpoint. Name every default- or prefix-rated model and repeat that compute
+cost is a rate-card valuation, not an invoice.
 
-## Data availability
-
-The local collector reads GitHub Copilot CLI's
-`~/.copilot/session-store.db` tables `sessions` and
-`assistant_usage_events`. VS Code Copilot Chat does not expose this table, so
-those sessions cannot be recovered by this workflow.
+The collector reads GitHub Copilot CLI's local `sessions` and
+`assistant_usage_events` tables. VS Code Copilot Chat sessions cannot be
+recovered by this workflow.
